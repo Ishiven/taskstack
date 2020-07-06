@@ -5,13 +5,13 @@ pipeline {
         stage('Deploy the network stack') {
             steps {
                 sh "export AWS_DEFAULT_REGION=eu-west-1"
-                sh "aws cloudformation create-stack --template-body file://network.yml --stack-name networkstack"
+                sh "aws cloudformation create-stack --template-body file://network.yml --stack-name networkstack --region eu-west-1"
             }
         }
         stage('Deploy the content stack') {
             steps {
                 sh "export AWS_DEFAULT_REGION=eu-west-1"
-                sh "aws cloudformation create-stack --template-body file://main.yml --stack-name contentstack"
+                sh "aws cloudformation create-stack --template-body file://main.yml --stack-name contentstack --region eu-west-1"
             }
         }
     }
