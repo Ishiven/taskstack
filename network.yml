@@ -1,0 +1,412 @@
+Parameters:
+  CIDRRange:
+    Description: VPCCIDR Range (will be a /16 block)
+    Type: String
+    Default: 10.0.0.0
+    AllowedValues:
+      - 10.0.0.0
+      - 10.251.0.0
+  KeyName:
+    Description: The keypair for our bastion host
+    Type: String
+    Default: stack_key_pair
+  SSHLocation:
+    Description: The IP address range that can be used to SSH to the EC2 instances
+    Type: String
+    MinLength: '9'
+    MaxLength: '18'
+    Default: 83.20.225.109/32
+    AllowedPattern: '(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})'
+    ConstraintDescription: must be a valid IP CIDR range of the form x.x.x.x/x.
+Mappings:
+  VPCRanges:
+    10.0.0.0:
+      PublicNetAZ1: 10.0.0.0/22
+      PublicNetAZ2: 10.0.4.0/22
+      PrivateNetAZ1: 10.0.32.0/21
+      PrivateNetAZ2: 10.0.40.0/21
+      DatabaseNetAZ1: 10.0.8.0/22
+      DatabaseNetAZ2: 10.0.12.0/22
+    10.251.0.0:
+      PublicNetAZ1: 10.251.0.0/22
+      PublicNetAZ2: 10.251.4.0/22
+      PrivateNetAZ1: 10.251.32.0/21
+      PrivateNetAZ2: 10.251.40.0/21
+      DatabaseNetAZ1: 10.0.8.0/22
+      DatabaseNetAZ2: 10.0.12.0/22
+Resources:
+  VPCBase:
+    Type: 'AWS::EC2::VPC'
+    Properties:
+      CidrBlock: !Join 
+        - ''
+        - - !Ref CIDRRange
+          - /16
+      EnableDnsSupport: 'True'
+      EnableDnsHostnames: 'True'
+      Tags:
+        - Key: Name
+          Value: !Join 
+            - ''
+            - - !Ref 'AWS::StackName'
+              - '-VPC'
+  PublicNetAZ1:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      AvailabilityZone: !Select 
+        - '0'
+        - !GetAZs 
+            Ref: 'AWS::Region'
+      CidrBlock: !FindInMap 
+        - VPCRanges
+        - !Ref CIDRRange
+        - PublicNetAZ1
+      MapPublicIpOnLaunch: 'True'
+      Tags:
+        - Key: Name
+          Value: !Join 
+            - ''
+            - - !Ref 'AWS::StackName'
+              - '-PublicAZ1'
+      VpcId: !Ref VPCBase
+  DatabaseNetAZ1:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      AvailabilityZone: !Select 
+        - '0'
+        - !GetAZs 
+            Ref: 'AWS::Region'
+      CidrBlock: !FindInMap 
+        - VPCRanges
+        - !Ref CIDRRange
+        - DatabaseNetAZ1
+      MapPublicIpOnLaunch: 'True'
+      Tags:
+        - Key: Name
+          Value: !Join 
+            - ''
+            - - !Ref 'AWS::StackName'
+              - '-DatabaseAZ1'
+      VpcId: !Ref VPCBase
+  DatabaseNetAZ2:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      AvailabilityZone: !Select 
+        - '0'
+        - !GetAZs 
+            Ref: 'AWS::Region'
+      CidrBlock: !FindInMap 
+        - VPCRanges
+        - !Ref CIDRRange
+        - DatabaseNetAZ2
+      MapPublicIpOnLaunch: 'True'
+      Tags:
+        - Key: Name
+          Value: !Join 
+            - ''
+            - - !Ref 'AWS::StackName'
+              - '-DatabaseAZ2'
+      VpcId: !Ref VPCBase 
+  PublicNetAZ2:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      AvailabilityZone: !Select 
+        - '1'
+        - !GetAZs 
+            Ref: 'AWS::Region'
+      CidrBlock: !FindInMap 
+        - VPCRanges
+        - !Ref CIDRRange
+        - PublicNetAZ2
+      MapPublicIpOnLaunch: 'True'
+      Tags:
+        - Key: Name
+          Value: !Join 
+            - ''
+            - - !Ref 'AWS::StackName'
+              - '-PublicAZ2'
+      VpcId: !Ref VPCBase
+  PrivateNetAZ1:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      AvailabilityZone: !Select 
+        - '0'
+        - !GetAZs 
+            Ref: 'AWS::Region'
+      CidrBlock: !FindInMap 
+        - VPCRanges
+        - !Ref CIDRRange
+        - PrivateNetAZ1
+      MapPublicIpOnLaunch: 'False'
+      Tags:
+        - Key: Name
+          Value: !Join 
+            - ''
+            - - !Ref 'AWS::StackName'
+              - '-PrivateAZ1'
+        - Key: Network
+          Value: private
+      VpcId: !Ref VPCBase
+  PrivateNetAZ2:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      AvailabilityZone: !Select 
+        - '1'
+        - !GetAZs 
+            Ref: 'AWS::Region'
+      CidrBlock: !FindInMap 
+        - VPCRanges
+        - !Ref CIDRRange
+        - PrivateNetAZ2
+      MapPublicIpOnLaunch: 'False'
+      Tags:
+        - Key: Name
+          Value: !Join 
+            - ''
+            - - !Ref 'AWS::StackName'
+              - '-PrivateAZ2'
+        - Key: Network
+          Value: private
+      VpcId: !Ref VPCBase
+  IGWBase:
+    Type: 'AWS::EC2::InternetGateway'
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Join 
+            - ''
+            - - !Ref 'AWS::StackName'
+              - '-IGW'
+  VGAIGWBase:
+    Type: 'AWS::EC2::VPCGatewayAttachment'
+    Properties:
+      InternetGatewayId: !Ref IGWBase
+      VpcId: !Ref VPCBase
+  RouteTablePublic:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: !Ref VPCBase
+      Tags:
+        - Key: Name
+          Value: !Join 
+            - ''
+            - - !Ref 'AWS::StackName'
+              - '-PublicRT'
+  RouteTablePrivateAZ1:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: !Ref VPCBase
+      Tags:
+        - Key: Name
+          Value: !Join 
+            - ''
+            - - !Ref 'AWS::StackName'
+              - '-PrivateAZ1RT'
+  RouteTablePrivateAZ2:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: !Ref VPCBase
+      Tags:
+        - Key: Name
+          Value: !Join 
+            - ''
+            - - !Ref 'AWS::StackName'
+              - '-PrivateAZ2RT'
+  RoutePublicDefault:
+    DependsOn:
+      - VGAIGWBase
+    Type: 'AWS::EC2::Route'
+    Properties:
+      RouteTableId: !Ref RouteTablePublic
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref IGWBase
+  RouteAssociationPublicAZ1Default:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      SubnetId: !Ref PublicNetAZ1
+      RouteTableId: !Ref RouteTablePublic
+  RouteAssociationPublicAZ2Default:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      SubnetId: !Ref PublicNetAZ2
+      RouteTableId: !Ref RouteTablePublic
+  RouteAssociationPrivateAZ1Default:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      SubnetId: !Ref PrivateNetAZ1
+      RouteTableId: !Ref RouteTablePrivateAZ1
+  RouteAssociationPrivateAZ2Default:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      SubnetId: !Ref PrivateNetAZ2
+      RouteTableId: !Ref RouteTablePrivateAZ2
+  NATAZ1:
+    Type: 'AWS::EC2::NatGateway'
+    DependsOn: VGAIGWBase
+    Properties:
+      AllocationId: !GetAtt 
+        - EIPNATAZ1
+        - AllocationId
+      SubnetId: !Ref PublicNetAZ1
+  EIPNATAZ1:
+    Type: 'AWS::EC2::EIP'
+    Properties:
+      Domain: vpc
+  NATAZ1Route:
+    Type: 'AWS::EC2::Route'
+    Properties:
+      RouteTableId: !Ref RouteTablePrivateAZ1
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NATAZ1
+  NATAZ2:
+    Type: 'AWS::EC2::NatGateway'
+    DependsOn: VGAIGWBase
+    Properties:
+      AllocationId: !GetAtt 
+        - EIPNATAZ2
+        - AllocationId
+      SubnetId: !Ref PublicNetAZ2
+  EIPNATAZ2:
+    Type: 'AWS::EC2::EIP'
+    Properties:
+      Domain: vpc
+  NATAZ2Route:
+    Type: 'AWS::EC2::Route'
+    Properties:
+      RouteTableId: !Ref RouteTablePrivateAZ2
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NATAZ2
+  BastionSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupName: bastion-sg
+      GroupDescription: Security group with SSH access
+      VpcId: !Ref VPCBase
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: !Ref SSHLocation
+  LinuxBastionHost:
+    Type: 'AWS::EC2::Instance'
+    DependsOn:
+      - VGAIGWBase
+    Properties:
+      InstanceType: t2.micro
+      KeyName: !Ref KeyName
+      ImageId: ami-047bb4163c506cd98
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: true
+          Description: ENI for bastion host
+          DeviceIndex: '0'
+          SubnetId: !Ref PublicNetAZ1
+          GroupSet:
+            - !Ref BastionSecurityGroup
+Outputs:
+
+  VPCID:
+    Value: !Ref VPCBase
+    Description: The ID of our VPC
+    Export: 
+      Name: 
+        "Fn::Sub": "${AWS::StackName}-VpcID"
+        
+  ElasticIP1:
+    Value: !Ref EIPNATAZ1
+
+  ElasticIP2:
+    Value: !Ref EIPNATAZ2
+
+  StackName:  
+    Description: The name of our stack
+    Value: !Ref AWS::StackName
+    Export:
+      Name:
+        "Fn::Sub": "${AWS::StackName}"
+
+  PublicNetAZs:
+    Description: A list of the public subnets
+    Value: !Join [ ",", [ !Ref PublicNetAZ1, !Ref PublicNetAZ2 ]]
+    Export: 
+      Name: 
+        "Fn::Sub": "${AWS::StackName}-PublicNetAZsID"
+
+  PrivateNetAZs:
+    Description: A list of the private subnets
+    Value: !Join [ ",", [ !Ref PrivateNetAZ1, !Ref PrivateNetAZ2 ]]
+    Export:
+      Name: 
+        "Fn::Sub": "${AWS::StackName}-PrivateNetAZsID"
+
+  PrivateNetAZ1:
+    Description: A reference to the private subnet in the 1st Availability Zone
+    Value: !Ref PrivateNetAZ1
+    Export:
+      Name:
+        "Fn::Sub": "${AWS::StackName}-PrivateNetAZ1"
+
+  PrivateNetAZ2:
+    Description: A reference to the private subnet in the 2nd Availability Zone
+    Value: !Ref PrivateNetAZ2
+    Export:
+      Name:
+        "Fn::Sub": "${AWS::StackName}-PrivateNetAZ2"
+
+  PublicNetAZ1:
+    Description: A reference to the private subnet in the 1st Availability Zone
+    Value: !Ref PublicNetAZ1
+    Export:
+      Name:
+        "Fn::Sub": "${AWS::StackName}-PublicNetAZ1"
+
+  PublicNetAZ2:
+    Description: A reference to the private subnet in the 2nd Availability Zone
+    Value: !Ref PublicNetAZ2
+    Export:
+      Name:
+        "Fn::Sub": "${AWS::StackName}-PublicNetAZ2"
+
+  LinuxBastionHost:
+    Description: Linux-based Bastion host
+    Value: !Ref LinuxBastionHost
+
+  BastionSecurityGroup:
+    Description: Security group with SSH ingress access rule
+    Value: !Ref BastionSecurityGroup
+    Export:
+      Name:
+        "Fn::Sub": "${AWS::StackName}-BastionSG"
+
+  WorkstationIP:
+    Description: The IP used to SSH into the Bastion
+    Value: !Ref SSHLocation
+    Export:
+      Name:
+        "Fn::Sub": "${AWS::StackName}-SSHLocation"
+
+  DatabaseNetAZs:
+    Description: A list of the DB subnets
+    Value: !Join [ ",", [ !Ref DatabaseNetAZ1, !Ref DatabaseNetAZ2 ]]
+    Export:
+      Name: 
+        "Fn::Sub": "${AWS::StackName}-DatabaseNetAZsID"
+
+  DatabaseNetAZ1:
+    Description: A reference to the private subnet in the 1st Availability Zone
+    Value: !Ref DatabaseNetAZ1
+    Export:
+      Name:
+        "Fn::Sub": "${AWS::StackName}-DatabaseNetAZ1"
+
+  DatabaseNetAZ2:
+    Description: A reference to the private subnet in the 2nd Availability Zone
+    Value: !Ref DatabaseNetAZ2
+    Export:
+      Name:
+        "Fn::Sub": "${AWS::StackName}-DatabaseNetAZ2"
+
+  
+  DefaultSG:
+    Value: !GetAtt 
+      - VPCBase
+      - DefaultSecurityGroup
