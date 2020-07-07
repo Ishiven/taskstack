@@ -2,23 +2,23 @@
 
     # First, update the OS
 
-    sudo yum update -y
+     yum update -y
 
     # Second, install the necessary apps
 
-    sudo yum install -y php73 php73-mysqlnd mysql httpd24 git python python-devel python-pip openssl
+     yum install -y php73 php73-mysqlnd mysql httpd24 git python python-devel python-pip openssl
 
     #Third, install boto and botocore
 
-    sudo pip install -y boto3 botocore3
+     pip install -y boto3 botocore3
 
     #Fourth, go into the directory and download wordpress fileset
 
     cd /var/www/html
 
-    sudo wget http://wordpress.org/latest.tar.gz
+     wget http://wordpress.org/latest.tar.gz
 
-    sudo tar -xvf latest.tar.gz
+     tar -xvf latest.tar.gz
 
     #Fifth, we select a region for our AWS CLI tool
 
