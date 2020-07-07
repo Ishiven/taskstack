@@ -23,6 +23,7 @@
     #Fifth, we select a region for our AWS CLI tool
 
     export AWS_DEFAULT_REGION=eu-west-1
+    aws configure set default.region eu-west-1
 
     #Sixth, we generate the AMI from our instance.
 
