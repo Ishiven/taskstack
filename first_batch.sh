@@ -2,11 +2,11 @@
 
     # First, update the OS
 
-     yum update -y
+    sudo yum update -y
 
     # Second, install the necessary apps
 
-     yum install -y php73 php73-mysqlnd mysql httpd24 git python python-devel python-pip openssl
+    sudo yum install -y php73 php73-mysqlnd mysql httpd24 git python python-devel python-pip openssl
 
     #Third, install boto and botocore
 
@@ -31,4 +31,4 @@
 
     #Seventh, replace the default AMI with our provided AMI
 
-    sed -i -e "s/ami-08935252a36e25f85/$(aws ec2 describe-images --owners self | grep "ImageId:*" | awk -F':' '{ print $2 }' | sed 's/\"//g' | sed 's/\,//g' | grep -v "ami-07273f1a8d9bb49c7")/g" /var/lib/jenkins/workspace/task1/main.yml
+    sudo sed -i -e "s/ami-08935252a36e25f85/$(aws ec2 describe-images --owners self | grep "ImageId:*" | awk -F':' '{ print $2 }' | sed 's/\"//g' | sed 's/\,//g' | grep -v "ami-07273f1a8d9bb49c7")/g" /var/lib/jenkins/workspace/task1/taskstack/main.yml
