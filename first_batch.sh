@@ -31,4 +31,4 @@
 
     #Seventh, replace the default AMI with our provided AMI
 
-    sed -i -e "s/ami-08935252a36e25f85/$(aws ec2 describe-images --owners self | grep "ImageId:*" | awk -F':' '{ print $2 }' | sed 's/\"//g' | sed 's/\,//g' | grep -v "ami-07273f1a8d9bb49c7")/g" taskstack/main.yml
+    sed -i -e "s/ami-08935252a36e25f85/$(aws ec2 describe-images --owners self | grep "ImageId:*" | awk -F':' '{ print $2 }' | sed 's/\"//g' | sed 's/\,//g' | grep -v "ami-07273f1a8d9bb49c7")/g" main.yml
