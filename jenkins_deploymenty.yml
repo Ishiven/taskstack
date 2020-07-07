@@ -1,0 +1,138 @@
+---
+- name: Create an EC2 instance
+  hosts: localhost
+  gather_facts: False
+  vars:
+    key_name: stack_key_pair
+    instance_type: t2.micro
+    region: eu-west-1
+    image: ami-08935252a36e25f85
+    security_group: webserversg
+    count: 1
+    contents: "{{ lookup('file', '/var/lib/jenkins/secrets/initialAdminPassword') }}"
+  vars_files:
+    - aws_keys.yml
+  tasks:
+  - name: Create a security group
+    ec2_group:
+      name: "{{ security_group }}"
+      description: The webservers security group
+      region: "{{ region }}"
+      aws_access_key: "{{ aws_access_key }}"
+      aws_secret_key: "{{ aws_secret_key }}"
+      rules:
+        - proto: tcp
+          from_port: 22
+          to_port: 22
+          cidr_ip: 83.20.225.109/32
+        - proto: tcp
+          from_port: 80
+          to_port: 80
+          cidr_ip: 0.0.0.0/0
+        - proto: tcp
+          from_port: 8080
+          to_port: 8080
+          cidr_ip: 0.0.0.0/0
+        - proto: tcp
+          from_port: 443
+          to_port: 443
+          cidr_ip: 0.0.0.0/0
+      rules_egress:
+        - proto: all
+          cidr_ip: 0.0.0.0/0
+
+  - name: Launch the new EC2 Instance
+    ec2:
+      aws_access_key: "{{ aws_access_key }}"
+      aws_secret_key: "{{ aws_secret_key }}"
+      group: "{{ security_group }}"
+      instance_type: "{{ instance_type }}"
+      image: "{{ image }}"
+      wait: true 
+      region: "{{ region }}"
+      key_name: "{{ key_name }}"
+      count: "{{count}}"
+      vpc_subnet_id: subnet-0014b42dc6eb87008
+      assign_public_ip: yes
+      instance_profile_name: adminrole
+    register: ec2
+  
+  - name: Add the newly created host so that we can further contact it
+    add_host:
+      name: "{{ item.public_ip }}"
+      groups: webservers
+    with_items: "{{ ec2.instances }}"
+
+  - name: Add tag to Instance(s)
+    ec2_tag:
+      aws_access_key: "{{ aws_access_key }}"
+      aws_secret_key: "{{ aws_secret_key }}"
+      resource: "{{ item.id }}" 
+      region: "{{ region }}" 
+      state: "present"
+    with_items: "{{ ec2.instances }}"
+    args:
+      tags:
+        Type: webserver
+
+  - name: Wait for SSH to come up
+    wait_for:
+      host: "{{ item.public_ip }}"
+      port: 22 
+      state: started 
+    with_items: "{{ ec2.instances }}"
+
+  - name: Gather EC2 facts
+    ec2_instance_facts:
+      region: "{{ region }}"
+      filters:
+        instance-state-name: "running"
+      aws_access_key: "{{ aws_access_key }}"
+      aws_secret_key: "{{ aws_secret_key }}"
+    register: ec2
+  
+  - debug: var=ec2
+
+  - name: Make vars persistant
+    set_fact:
+      region: "{{ region }}"
+      ec2: "{{ ec2.instances[0] }}"
+
+- name: Configure the machine
+  hosts: webservers
+  remote_user: ec2-user
+  become: yes
+  gather_facts: no
+  vars_files:
+  - aws_keys.yml
+  tasks:
+    - name: 'Set-fact the values'
+      set_fact: 
+        region: "{{hostvars['localhost']['region']}}"
+        ec2: "{{hostvars['localhost']['ec2']}}"
+    - debug: var=hostvars['localhost']['ec2']
+      when: hostvars['localhost']['ec2'] is defined
+    - name: Install boto3 and botocore with pip3 module
+      pip:
+        name: 
+        - boto3
+        - botocore
+        executable: pip
+    - name: 'Update'
+      raw: 'sudo yum update -y'
+    - name: 'Install the necessary software'
+      raw: 'sudo yum install -y java-1.8.0-openjdk-devel git'
+    - name: 'Remove the old JDK-devel'
+      raw: 'sudo yum remove -y java-1.7.0-openjdk.x86_64'
+    - name: Ensure Jenkins Yum repo present
+      get_url: 
+        url=http://pkg.jenkins-ci.org/redhat/jenkins.repo
+        dest=/etc/yum.repos.d/jenkins.repo mode=0644
+    - name: Get the key for Jenkins
+      raw: 'sudo wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat/jenkins.repo'
+    - name: Ensure Jenkins GPG key installed
+      raw: 'sudo rpm --import https://pkg.jenkins.io/redhat/jenkins.io.key'
+    - name: Install Jenkins
+      raw: 'sudo yum install -y jenkins'
+    - name: Start Jenkins
+      raw: 'sudo service jenkins start'

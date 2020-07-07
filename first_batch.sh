@@ -23,11 +23,10 @@
     #Fifth, we select a region for our AWS CLI tool
 
     export AWS_DEFAULT_REGION=eu-west-1
-    aws configure set default.region eu-west-1
 
     #Sixth, we generate the AMI from our instance.
 
-    aws ec2 create-image --instance-id `aws ec2 describe-instance-status | grep "InstanceId":*"" | awk -F':' '{ print $2 }' | sed 's/\"//g' | sed 's/\,//g'` --name "test-image" --no-reboot
+    aws ec2 create-image --region eu-west-1 --instance-id `aws ec2 describe-instance-status | grep "InstanceId":*"" | awk -F':' '{ print $2 }' | sed 's/\"//g' | sed 's/\,//g'` --name "test-image" --no-reboot
     sleep 60
 
     #Seventh, replace the default AMI with our provided AMI
