@@ -5,7 +5,6 @@ pipeline {
 
         stage('Prepare the AMI with a shell script') {
             steps {
-                sh 'echo "jenkins ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers'
                 sh 'chmod +x first_batch.sh'
                 sh 'sudo ./first_batch.sh'
             }
