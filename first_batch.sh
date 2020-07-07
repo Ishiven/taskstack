@@ -1,0 +1,39 @@
+    #!/bin/sh
+
+    # First, update the OS
+
+    sudo yum update -y
+
+    # Second, install the necessary apps
+
+    sudo yum install -y php73 php73-mysqlnd mysql httpd24 git python python-devel python-pip openssl
+
+    #Third, install boto and botocore
+
+    sudo pip install -y boto3 botocore3
+
+    #Fourth, go into the directory and download wordpress fileset
+
+    cd /var/www/html
+
+    sudo wget http://wordpress.org/latest.tar.gz
+
+    sudo tar -xvf latest.tar.gz
+
+    #Fifth, we select a region for our AWS CLI tool
+
+    export AWS_DEFAULT_REGION=eu-west-1
+
+    #Sixth, we generate the AMI from our instance.
+
+    aws ec2 create-image --instance-id `aws ec2 describe-instance-status | grep "InstanceId":*"" | awk -F':' '{ print $2 }' | sed 's/\"//g' | sed 's/\,//g'` --name "test-image" --no-reboot
+    sleep 60
+
+    #Seventh, clone the repo we are getting the data from
+
+    cd $HOME/
+    git clone https://github.com/Ishiven/taskstack
+    
+    #Eighth, replace the default AMI with our provided AMI
+
+    sed -i -e "s/ami-08935252a36e25f85/$(aws ec2 describe-images --owners self | grep "ImageId:*" | awk -F':' '{ print $2 }' | sed 's/\"//g' | sed 's/\,//g' | grep -v "ami-01799808978311da5")/g" taskstack/main.yml
