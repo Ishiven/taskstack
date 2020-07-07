@@ -7,7 +7,6 @@ pipeline {
             steps {
                 sh 'chmod +x first_batch.sh'
                 sh 'sudo ./first_batch.sh'
-                sh 'aws configure set default.region eu-west-1'
             }
         }
         stage('Deploy the network stack') {
