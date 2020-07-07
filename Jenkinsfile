@@ -5,10 +5,8 @@ pipeline {
 
         stage('Prepare the AMI with a shell script') {
             steps {
-                sh 'git clone https://github.com/Ishiven/taskstack'
-                sh 'cd taskstack'
-                sh 'sudo chmod +x first_batch.sh'
-                sh 'sudo ./first_batch.sh'
+                sh 'chmod +x first_batch.sh'
+                sh './first_batch.sh'
             }
         }
         stage('Deploy the network stack') {
