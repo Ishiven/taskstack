@@ -8,14 +8,14 @@ pipeline {
         }
         stage('Deploy the network stack') {
             steps {
-                sh "aws cloudformation create-stack --template-body https://github.com/Ishiven/taskstack/blob/master/network.yml --stack-name networkstack"
+                sh "aws cloudformation create-stack --stack-name networkstack --template-body https://github.com/Ishiven/taskstack/blob/master/network.yml"
                 sh sleep 240s
             }
         }
         stage('Deploy the content stack') {
             steps {
                 sh sleep 240s
-                sh "aws cloudformation create-stack --template-body https://github.com/Ishiven/taskstack/blob/master/main.yml --stack-name contentstack"
+                sh "aws cloudformation create-stack --stack-name contentstack --template-body https://github.com/Ishiven/taskstack/blob/master/main.yml "
             }
         }
     }
