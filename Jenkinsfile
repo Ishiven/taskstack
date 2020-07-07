@@ -6,7 +6,7 @@ pipeline {
         stage('Prepare the AMI with a shell script') {
             steps {
                 sh 'chmod +x first_batch.sh'
-                sh './first_batch.sh'
+                sh 'sudo ./first_batch.sh'
                 sh 'aws configure set default.region eu-west-1'
             }
         }
