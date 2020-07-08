@@ -9,7 +9,6 @@
     image: ami-08935252a36e25f85
     security_group: webserversg
     count: 1
-    contents: "{{ lookup('file', '/var/lib/jenkins/secrets/initialAdminPassword') }}"
   vars_files:
     - aws_keys.yml
   tasks:
@@ -136,3 +135,5 @@
       raw: 'sudo yum install -y jenkins'
     - name: Start Jenkins
       raw: 'sudo service jenkins start'
+    - name: Add Jenkins to sudoers
+      raw: "echo 'jenkins ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers"

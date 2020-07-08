@@ -1,34 +1,5 @@
     #!/bin/sh
 
-    # First, update the OS
+    #Deploy an instance in selected region with custom script included in the local repo
 
-    sudo yum update -y
-
-    # Second, install the necessary apps
-
-    sudo yum install -y php73 php73-mysqlnd mysql httpd24 git python python-devel python-pip openssl
-
-    #Third, install boto and botocore
-
-     pip install -y boto3 botocore3
-
-    #Fourth, go into the directory and download wordpress fileset
-
-    cd /var/www/html
-
-     wget http://wordpress.org/latest.tar.gz
-
-     tar -xvf latest.tar.gz
-
-    #Fifth, we select a region for our AWS CLI tool
-
-    export AWS_DEFAULT_REGION=eu-west-1
-
-    #Sixth, we generate the AMI from our instance.
-
-    aws ec2 create-image --region eu-west-1 --instance-id `aws ec2 describe-instance-status | grep "InstanceId:*" | awk -F':' '{ print $2 }' | sed 's/\"//g' | sed 's/\,//g'` --name "test-image" --no-reboot
-    sleep 60
-
-    #Seventh, replace the default AMI with our provided AMI
-
-    sudo sed -i -e "s/ami-08935252a36e25f85/$(aws ec2 describe-images --owners self | grep "ImageId:*" | awk -F':' '{ print $2 }' | sed 's/\"//g' | sed 's/\,//g' | grep -v "ami-07273f1a8d9bb49c7")/g" /var/lib/jenkins/workspace/test1/main.yml
+        aws ec2 run-instances --image-id ami-0c3e74fa87d2a4227 --count 1 --key-name stack_key_pair --instance-type t2.micro  --security-group-ids sg-0b3df30e75c5ec04a --subnet-id subnet-0014b42dc6eb87008 --user-data file://config.sh --iam-instance-profile Name=adminrole
