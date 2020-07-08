@@ -9,5 +9,17 @@ pipeline {
                 sh 'sudo ./first_batch.sh'
             }
         }
+        stage('Deploy the network stack') {
+            steps {
+                sh 'aws cloudformation create-stack --region eu-west-1 --stack-name networkstack --template-body file://network.yml'
+                sh 'sleep 240s'
+            }
+        }
+        stage('Deploy the content stack') {
+            steps {
+                sh 'sleep 240s'
+                sh 'aws cloudformation create-stack --region eu-west-1 --stack-name contentstack --template-body file://main.yml'
+            }
+        }
     }
 }
