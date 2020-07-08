@@ -6,7 +6,7 @@
     
     #Replace the default AMI with our newly generated AMI
     
-    wait 240s
+    wait 120s
     
     aws ec2 describe-images --region eu-west-1 --owners self | grep "ImageId:*" | awk -F':' '{ print $2 }' | sed 's/\"//g' | sed 's/\,//g' | sed 's/^[[:space:]]*//g' |  grep -v "ami-07273f1a8d9bb49c7"
     
