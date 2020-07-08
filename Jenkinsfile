@@ -7,6 +7,7 @@ pipeline {
             steps {
                 sh 'chmod +x first_batch.sh'
                 sh 'sudo ./first_batch.sh'
+                sh 'sleep 300s'
             }
         }
         stage('Deploy the network stack') {
